@@ -49,6 +49,7 @@ function createBot() {
         auth: 'offline',
         checkTimeoutInterval: 90 * 1000,
         hideErrors: false
+        skipValidation: true // Kimlik doğrulama adımlarını atlayıp doğrudan sunucuya bağlanır
     });
 
     // TCP seviyesinde soket bağlantısını izle
