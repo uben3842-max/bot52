@@ -20,7 +20,7 @@ function createBot() {
     console.log('Minecraft sunucusuna bağlanılıyor...');
 
     bot = mineflayer.createBot({
-        host: process.env.MC_HOST,
+        host: 'BuYason-s5RO.aternos.me', // Buraya bağlanacağınız sunucu IP'sini yazın
         port: Number(process.env.MC_PORT) || 25565,
         username: process.env.MC_USERNAME || 'BotYasin',
         version: process.env.MC_VERSION || '1.21.1'
