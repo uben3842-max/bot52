@@ -1,17 +1,21 @@
 const mineflayer = require('mineflayer');
 const express = require('express');
+const dns = require('dns');
+
+// Render / Bulut sunucularda IPv6 zaman aşımı (ETIMEDOUT) hatasını önlemek için IPv4 zorlaması
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Tarayıcıdaki kafa karışıklığını önlemek için durumu güncelledik
 let isConnected = false;
+let lastError = 'Henüz bağlantı denenmedi.';
 
 app.get('/', (req, res) => {
     if (isConnected) {
-        res.send('✅ Node.js sunucusu açık ve Mineflayer botu Minecraft sunucusuna BAĞLI!');
+        res.send('✅ Node.js açık ve Mineflayer botu Minecraft sunucusuna BAĞLI!');
     } else {
-        res.send('⚠️ Node.js sunucusu açık AMA bot şu anda Minecraft sunucusuna BAĞLANAMADI (Aternos kapalı veya port hatalı olabilir).');
+        res.send(`⚠️ Node.js açık AMA bot henüz giremedi. Son Durum/Hata: ${lastError}`);
     }
 });
 
@@ -24,8 +28,9 @@ let afkInterval = null;
 
 function createBot() {
     console.log('Minecraft sunucusuna bağlanılıyor...');
+    lastError = 'Bağlanılıyor...';
 
-    // Eski bot ve zamanlayıcıları temizle
+    // 1. ESKİ BOT VE ZAMANLAYICILARI TEMİZLE
     if (bot) {
         bot.removeAllListeners();
         bot = null;
@@ -35,19 +40,30 @@ function createBot() {
         afkInterval = null;
     }
 
+    // 2. BOT OLUŞTUR
     bot = mineflayer.createBot({
         host: 'squirrel.aternos.host',
         port: 45830,
         username: process.env.MC_USERNAME || 'Bot_Test',
-        version: '1.21.1', // Sürümü açıkça belirtiyoruz
+        version: false, // Sürümü otomatik algılamaya bırakmak protokol uyuşmazlığını çözer
         auth: 'offline',
-        checkTimeoutInterval: 90 * 1000
+        checkTimeoutInterval: 90 * 1000,
+        hideErrors: false
     });
+
+    // TCP seviyesinde soket bağlantısını izle
+    if (bot._client) {
+        bot._client.on('connect', () => {
+            console.log('🌐 TCP Bağlantısı kuruldu, paketler Aternos sunucusuna iletiliyor...');
+        });
+    }
 
     bot.once('spawn', () => {
         isConnected = true;
+        lastError = 'Yok (Sunucuda aktif)';
         console.log('✅ Bot Minecraft sunucusuna başarıyla bağlandı ve oyunda doğdu!');
 
+        // ANTI-AFK (Her 60 saniyede bir zıplama)
         afkInterval = setInterval(() => {
             if (bot && bot.entity) {
                 bot.setControlState('jump', true);
@@ -69,17 +85,20 @@ function createBot() {
 
     bot.on('kicked', (reason) => {
         isConnected = false;
-        console.log('🚨 Bot sunucudan atıldı:', JSON.stringify(reason));
+        const kickMsg = typeof reason === 'object' ? JSON.stringify(reason) : reason;
+        lastError = `Sunucudan atıldı: ${kickMsg}`;
+        console.log('🚨 Bot sunucudan atıldı:', kickMsg);
     });
 
     bot.on('error', (err) => {
         isConnected = false;
-        console.log('❌ Bot hatası:', err.message);
+        lastError = err.message || err;
+        console.log('❌ Bot hatası:', lastError);
     });
 
-    bot.on('end', () => {
+    bot.on('end', (reason) => {
         isConnected = false;
-        console.log('🔄 Bağlantı kesildi. 15 saniye sonra tekrar bağlanılacak...');
+        console.log(`🔄 Bağlantı kesildi (${reason || 'Bilinmeyen neden'}). 15 saniye sonra tekrar bağlanılacak...`);
 
         if (afkInterval) clearInterval(afkInterval);
 
@@ -89,6 +108,7 @@ function createBot() {
     });
 }
 
+// GLOBAL HATA YAKALAYICILAR
 process.on('uncaughtException', (err) => {
     console.error('Yakalanamayan Hata:', err.message);
 });
