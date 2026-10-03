@@ -30,7 +30,7 @@ function createBot() {
 
     // 2. YENİ BOT OLUŞTUR
     bot = mineflayer.createBot({
-        host: 'BuYason-s5RO.aternos.me',
+        host: 'squirrel.aternos.host',
         port: 45830,
         username: process.env.MC_USERNAME || 'Bot',
         version: process.env.MC_VERSION || '1.21.1',
