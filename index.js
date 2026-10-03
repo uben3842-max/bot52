@@ -4,7 +4,6 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// UptimeRobot servisi buraya ping atarak botu 7/24 aktif tutar
 app.get('/', (req, res) => {
     res.send('Mineflayer bot aktif!');
 });
@@ -19,17 +18,18 @@ function createBot() {
     console.log('Minecraft sunucusuna bağlanılıyor...');
 
     bot = mineflayer.createBot({
-        host: 'BuYason-s5RO.aternos.me', // Aternos Sunucu IP Adresi
-        port: Number(process.env.MC_PORT) || 25565,
+        host: 'BuYason-s5RO.aternos.me',
+        port: 45830, // 👈 Aternos portunuz buraya eklendi
         username: process.env.MC_USERNAME || 'Bot',
-        version: process.env.MC_VERSION || '1.21.1',
-        auth: 'offline' // Aternos/Cracked sunucular için
+        version: process.env.MC_VERSION || '1.21.1', // ⚠️ Aternos panelindeki sürümle tam eşleşmeli
+        auth: 'offline',
+        checkTimeoutInterval: 60 * 1000 // Sunucu kasılmalarında zaman aşımına düşmemesi için 60 saniye
     });
 
     bot.once('spawn', () => {
         console.log('✅ Bot sunucuya bağlandı!');
 
-        // Anti-AFK: Sunucudan atılmamak için her 60 saniyede bir zıplar
+        // Anti-AFK
         setInterval(() => {
             if (bot && bot.entity) {
                 bot.setControlState('jump', true);
@@ -38,7 +38,6 @@ function createBot() {
         }, 60000);
     });
 
-    // 💀 Bot öldüğünde otomatik yeniden doğar (Respawn)
     bot.on('death', () => {
         console.log('💀 Bot öldü, yeniden doğuluyor...');
         bot.respawn();
@@ -57,11 +56,10 @@ function createBot() {
     });
 
     bot.on('end', () => {
-        console.log('🔄 Bağlantı kesildi. 10 saniye sonra tekrar bağlanılacak...');
-
+        console.log('🔄 Bağlantı kesildi. 15 saniye sonra tekrar bağlanılacak...');
         setTimeout(() => {
             createBot();
-        }, 10000);
+        }, 15000);
     });
 }
 
