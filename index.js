@@ -18,7 +18,7 @@ function createBot() {
     console.log('Minecraft sunucusuna bağlanılıyor...');
 
     bot = mineflayer.createBot({
-        host: 'BuYason-s5RO.aternos.me',
+        host: 'BuYason-s5RO.aternos.me:',
         port: 45830, // 👈 Aternos portunuz buraya eklendi
         username: process.env.MC_USERNAME || 'Bot',
         version: process.env.MC_VERSION || '1.21.1', // ⚠️ Aternos panelindeki sürümle tam eşleşmeli
