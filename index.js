@@ -2,10 +2,17 @@ const mineflayer = require('mineflayer');
 const express = require('express');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
+
+// Tarayıcıdaki kafa karışıklığını önlemek için durumu güncelledik
+let isConnected = false;
 
 app.get('/', (req, res) => {
-    res.send('Mineflayer bot aktif!');
+    if (isConnected) {
+        res.send('✅ Node.js sunucusu açık ve Mineflayer botu Minecraft sunucusuna BAĞLI!');
+    } else {
+        res.send('⚠️ Node.js sunucusu açık AMA bot şu anda Minecraft sunucusuna BAĞLANAMADI (Aternos kapalı veya port hatalı olabilir).');
+    }
 });
 
 app.listen(PORT, () => {
@@ -18,7 +25,7 @@ let afkInterval = null;
 function createBot() {
     console.log('Minecraft sunucusuna bağlanılıyor...');
 
-    // 1. ESKİ BOT VE ZAMANLAYICILARI TEMİZLE (Bellek sızıntısını önler)
+    // Eski bot ve zamanlayıcıları temizle
     if (bot) {
         bot.removeAllListeners();
         bot = null;
@@ -28,20 +35,19 @@ function createBot() {
         afkInterval = null;
     }
 
-    // 2. YENİ BOT OLUŞTUR
     bot = mineflayer.createBot({
         host: 'squirrel.aternos.host',
         port: 45830,
-        username: process.env.MC_USERNAME || 'Bot',
-        version: process.env.MC_VERSION || '1.21.1',
+        username: process.env.MC_USERNAME || 'Bot_Test',
+        version: '1.21.1', // Sürümü açıkça belirtiyoruz
         auth: 'offline',
-        checkTimeoutInterval: 60 * 1000
+        checkTimeoutInterval: 90 * 1000
     });
 
     bot.once('spawn', () => {
-        console.log('✅ Bot sunucuya bağlandı!');
+        isConnected = true;
+        console.log('✅ Bot Minecraft sunucusuna başarıyla bağlandı ve oyunda doğdu!');
 
-        // 3. TEK BİR ANTI-AFK ZAMANLAYICISI BAŞLAT
         afkInterval = setInterval(() => {
             if (bot && bot.entity) {
                 bot.setControlState('jump', true);
@@ -62,14 +68,17 @@ function createBot() {
     });
 
     bot.on('kicked', (reason) => {
-        console.log('Bot sunucudan atıldı:', reason);
+        isConnected = false;
+        console.log('🚨 Bot sunucudan atıldı:', JSON.stringify(reason));
     });
 
     bot.on('error', (err) => {
+        isConnected = false;
         console.log('❌ Bot hatası:', err.message);
     });
 
     bot.on('end', () => {
+        isConnected = false;
         console.log('🔄 Bağlantı kesildi. 15 saniye sonra tekrar bağlanılacak...');
 
         if (afkInterval) clearInterval(afkInterval);
@@ -80,12 +89,11 @@ function createBot() {
     });
 }
 
-// 4. UYGULAMANIN ÇÖKMESİNİ ÖNLENEN GLOBAL HATA YAKALAYICILAR
 process.on('uncaughtException', (err) => {
     console.error('Yakalanamayan Hata:', err.message);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
     console.error('İşlenmeyen Vaat Reddi:', reason);
 });
 
