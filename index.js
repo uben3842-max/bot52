@@ -45,7 +45,7 @@ function createBot() {
         host: 'squirrel.aternos.host',
         port: 45830,
         username: process.env.MC_USERNAME || 'Bot_Test',
-        version: false, // Sürümü otomatik algılamaya bırakmak protokol uyuşmazlığını çözer
+        version: 1.21.1, // Sürümü otomatik algılamaya bırakmak protokol uyuşmazlığını çözer
         auth: 'offline',
         checkTimeoutInterval: 90 * 1000,
         hideErrors: false
